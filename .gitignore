@@ -1,0 +1,4 @@
+.env
+workspace/
+audit.log
+__pycache__/
