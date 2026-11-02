@@ -20,6 +20,7 @@ import gateway
 import guardrails
 import hooks
 import memory
+import skills
 import tools
 
 MAX_STEPS = 25  # a safety net so a confused model can't loop forever
@@ -28,6 +29,7 @@ SYSTEM_PROMPT = """You are mini-claude, a small coding agent.
 You work in this folder: {workdir}  (operating system: {os})
 For files outside it, just call the tool: the user will be asked for permission.
 Look at files before you change them. After changing code, run it to check it works.
+When you run something, include its actual output in your reply.
 If a tool result says BLOCKED, don't try to get around it; tell the user why.
 Keep your replies short.
 
@@ -37,16 +39,21 @@ The mode can change during the chat, so always call the tool and let the harness
 decide. Never refuse on your own because of something that was blocked earlier.
 
 What you remember about this project (from MEMORY.md):
-{memory}"""
+{memory}
+
+Skills you can load with use_skill (load the matching one before starting a task it covers):
+{skills}"""
 
 tools.TOOLS["remember"] = (memory.remember, "Save a fact about this project for future sessions.",
                            {"note": "The fact to remember, in one sentence"})
+tools.TOOLS["use_skill"] = (skills.use_skill, "Load a skill's full instructions.",
+                            {"name": "The skill's name, from the list in your instructions"})
 
 
 def system_prompt():
     """Rebuilt before every task, so the model always sees the current mode and memory."""
     return SYSTEM_PROMPT.format(workdir=config.WORKDIR, os=platform.system(),
-                                mode=config.MODE, memory=memory.load())
+                                mode=config.MODE, memory=memory.load(), skills=skills.summary())
 
 
 def run_tool(call):
@@ -72,6 +79,8 @@ def run_tool(call):
     except Exception as error:
         result = f"ERROR: {type(error).__name__}: {error}"
     hooks.run_after(name, args, result)
+    if name == "run_command":  # show what the command printed, not just that it ran
+        print("\n".join(f"    | {line}" for line in str(result).splitlines()[:20]))
     return result
 
 
@@ -116,7 +125,8 @@ HELP = f"""commands:
   /model NAME                  any model your provider offers
   /mode {'|'.join(MODES)}
   /context                     how full the context budget is
-  /compact                     summarise old turns now"""
+  /compact                     summarise old turns now
+  /skills                      list skills; run one with /NAME what you want"""
 
 
 def status():
@@ -139,6 +149,12 @@ def slash_command(text, messages):
         return
     if command == "/help":
         print(HELP)
+        return
+    if command == "/skills":
+        print(skills.summary())
+        return
+    if command[1:] in skills.find():  # /code-review app.py
+        print(ask(messages, skills.task(command[1:], value)))
         return
     if command not in ("/status", "/provider", "/model", "/mode"):
         print(f"unknown command {command}\n{HELP}")

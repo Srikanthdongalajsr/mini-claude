@@ -13,7 +13,8 @@ you ──> agent.py ──> gateway.py ──> Groq / OpenRouter / NVIDIA / Oll
            ├── guardrails.py  deny-list + permission modes (ask / auto / read-only)
            ├── hooks.py       your own code before / after every tool call
            ├── memory.py      MEMORY.md, loaded into the prompt at startup
-           └── context.py     summarise old turns when the conversation gets too big
+           ├── context.py     summarise old turns when the conversation gets too big
+           └── skills.py      skills/*/SKILL.md, loaded only when a task needs one
 ```
 
 ## Setup (2 minutes)
@@ -48,6 +49,8 @@ Point it at another folder with `WORKDIR=/path/to/project`.
 > /provider ollama            run on your own machine
 > /context                    how full the context budget is
 > /compact                    summarise old turns now
+> /skills                     list skills (add your own in skills/NAME/SKILL.md)
+> /code-review fib.py         run a skill yourself
 > exit
 ```
 
@@ -62,7 +65,8 @@ To run one task and exit: `python agent.py "add a test for fib.py"`
 | Python-function hooks | Shell-command hooks in settings.json (PreToolUse, PostToolUse, Stop…) |
 | `MEMORY.md` | CLAUDE.md files at user, project and folder level |
 | Summary of old turns + trimmed tool outputs (`context.py`) | Auto-compaction + `/compact` |
-| One agent | Sub-agents, skills, MCP servers, streaming, prompt caching, resumable sessions |
+| `skills/*/SKILL.md` + `use_skill` tool | Skills, plus bundled scripts and plugins |
+| One agent | Sub-agents, MCP servers, streaming, prompt caching, resumable sessions |
 
 ## Notes
 

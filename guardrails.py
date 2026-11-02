@@ -14,7 +14,7 @@ import re
 import config
 import tools
 
-SAFE_TOOLS = {"read_file", "list_files", "remember"}
+SAFE_TOOLS = {"read_file", "list_files", "remember", "use_skill"}
 
 NEVER_ALLOWED = [
     r"\brm\s+-\w*r\w*f?\s+(/|~|\*)",  # rm -rf /   rm -rf ~   rm -rf *
